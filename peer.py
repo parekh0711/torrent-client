@@ -33,6 +33,20 @@ def create_unchoke_message():
     buffer = pack(">IB", length, message_id)
     return buffer
 
+def parse_peer_response(message):
+    if not message:
+        print(message)
+        print("Nothing recieved")
+        return False
+    # print(message)
+    # print(message[3])
+    # print(message[4])
+    if message[4]==1 and message[3]==1:
+        print("unchoked")
+        return True
+    print("Not unchoked, recieved",message)
+    return False
+
 
 # def create_bitfield_message():
 #     return pack(">IB{}s".format(self.bitfield_length),

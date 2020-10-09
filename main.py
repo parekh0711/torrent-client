@@ -5,8 +5,9 @@
 from udp import *
 from peer import *
 from _thread import start_new_thread
+from bitfield import *
 
-my_torrent = Torrent.from_file('mulan.torrent')
+my_torrent = Torrent.from_file('../mulan.torrent')
 trackers = my_torrent.announce_urls
 hashes=[my_torrent.info_hash]
 
@@ -31,7 +32,7 @@ for tracker in trackers[2:30]:
             print("yoyoyo")
             req,peer_id=create_handshake_message(hashes)
 
-            for index in range(len(peers)):
+            for index in range(15,len(peers)):
                 ip=peers[index]['IP']
                 port=peers[index]['port']
                 clientsocket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,17 +60,27 @@ for tracker in trackers[2:30]:
                     continue
                 [print(message) for message in messages]
                 print("messages =",messages)
-                check = input('waiting.....')
-                if check =='c':
-                    req=create_interested_message()
-                    clientsocket.send(req)
-                    print("did")
-                    try:
-                        buffer = clientsocket.recv(1048)
-                    except:
-                        continue
-                    print("I got",buffer)
+                if len(messages)>=1:
+                    flag,bitfield = parse_bitfield(messages)
+                    print(flag)
+                if not flag: #at this point, we have bitfield
+                    continue
+                buffer = create_interested_message()
+                clientsocket.send(req)
+                clientsocket.settimeout(1)
+                try:
+                    message = clientsocket.recv(2048)
+                except:
+                    print("failed")
+                    continue
+                print("parsing peer")
+                resp = parse_peer_response(message)
+
+                if resp:
                     pass
+
+                check = input('waiting.....')
+
         elif tracker.scheme == 'http':
             pass  # do nothing for now
 
