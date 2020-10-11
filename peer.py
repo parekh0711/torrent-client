@@ -48,6 +48,8 @@ def parse_peer_response(message):
     return False
 
 
+
+
 # def create_bitfield_message():
 #     return pack(">IB{}s".format(self.bitfield_length),
 #                     self.payload_length,

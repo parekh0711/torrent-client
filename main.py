@@ -6,12 +6,12 @@ from udp import *
 from peer import *
 from _thread import start_new_thread
 from bitfield import *
-
-my_torrent = Torrent.from_file('../mulan.torrent')
+from piece import *
+my_torrent = Torrent.from_file('../trial.torrent')
 trackers = my_torrent.announce_urls
 hashes=[my_torrent.info_hash]
 
-for tracker in trackers[2:30]:
+for tracker in trackers[0:30]:
     tracker = urlparse(tracker[0])
     try:
         if tracker.scheme == 'udp':
@@ -30,9 +30,9 @@ for tracker in trackers[2:30]:
             ret,peers=udp_parse_announce_response(buf, transaction_id)
 
             print("yoyoyo")
-            req,peer_id=create_handshake_message(hashes)
+            handshake,peer_id=create_handshake_message(hashes)
 
-            for index in range(15,len(peers)):
+            for index in range(len(peers)):
                 ip=peers[index]['IP']
                 port=peers[index]['port']
                 clientsocket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,8 +43,7 @@ for tracker in trackers[2:30]:
                 except:
                     continue
                 print('connected')
-                print(req)
-                clientsocket.send(req)
+                clientsocket.send(handshake)
                 messages=[]
                 while True:
                     clientsocket.settimeout(1)
@@ -64,22 +63,31 @@ for tracker in trackers[2:30]:
                     flag,bitfield = parse_bitfield(messages)
                     print(flag)
                 if not flag: #at this point, we have bitfield
+                    input(flag)
                     continue
+
                 buffer = create_interested_message()
-                clientsocket.send(req)
-                clientsocket.settimeout(1)
+                print("sending interested")
+                clientsocket.send(buffer)
+                clientsocket.settimeout(2)
                 try:
                     message = clientsocket.recv(2048)
-                except:
-                    print("failed")
+                except Exception as e:
+                    print("failed",e)
                     continue
                 print("parsing peer")
                 resp = parse_peer_response(message)
-
                 if resp:
-                    pass
-
-                check = input('waiting.....')
+                    print(ip,port)
+                    input('done')
+                    data = ''
+                    for _ in range(len(bitfield)):
+                        data+='0'
+                    req = create_have_request(clientsocket,bitfield,data)
+                    input("waiting.......")
+                else:
+                    continue
+                # check = input('waiting.....')
 
         elif tracker.scheme == 'http':
             pass  # do nothing for now
