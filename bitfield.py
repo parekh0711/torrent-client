@@ -28,7 +28,6 @@ def parse_bitfield(bufs):
             buf = bufs[0][68:]
             if buf[4]==5:
                 length=buf[3]
-                print(length)
             buf = bufs[1]
             if len(buf)==length-1:   #if length is send with req 1 and bitfield only in req 2
                 bf = buf.hex()
@@ -38,12 +37,9 @@ def parse_bitfield(bufs):
             else:
                 buf=bufs[0][68:]
                 buf+=bufs[1]
-                print(buf)
                 length=buf[3]
                 bf = buf[5:length+4].hex()
                 pieces= bin(int(bf, base=16))[2:]
-                print(pieces)
-                print(len(pieces))
                 try:
                     buf = buf[length+4:]
                 except:
@@ -73,7 +69,6 @@ def modify(p):
     if len(p)!=len(bitfield):
         print("len mismatch")
         return None
-    print(len(p),len(bitfield))
     with lock:
         for index in range(len(bitfield)):
             bitfield[index]+=p[index]
@@ -86,7 +81,6 @@ def parse_have(buf,pieces):
             length = unpack_from("!i", have)[0]
             if length==5 and have[4]==4:
                 have=have[5:]
-                print(have)
                 piece=unpack_from("!i", have)[0]
                 pieces=pieces[0:piece]+'1'+pieces[piece+1:]
             buf=buf[9:]

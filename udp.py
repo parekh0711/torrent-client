@@ -38,7 +38,6 @@ def udp_create_connection_request():
 
 def create_udp_announce_request(connection_id, hashes):
     action= 0x1 #to announce
-    print("connect",connection_id)
     transaction_id= udp_get_transaction_id()
     buf = pack("!q", connection_id)
     buf += pack("!i", action)
@@ -60,7 +59,6 @@ def create_udp_announce_request(connection_id, hashes):
     buf += pack("!i", key)
     buf += pack("!i", -1)                                            #Number of peers required. Set to -1 for default
     buf += pack("!i", sock.getsockname()[1])                   #port on which response will be sent
-    print("buffff=",buf)
     return (buf, transaction_id)
 
 def udp_parse_announce_response(buf, sent_transaction_id):
@@ -70,11 +68,11 @@ def udp_parse_announce_response(buf, sent_transaction_id):
     action = unpack_from("!i", buf)[0] #first 4 bytes is action
     res_transaction_id = unpack_from("!i", buf, 4)[0] #next 4 bytes is transaction id
     if res_transaction_id != sent_transaction_id:
-        print(sent_transaction_id,res_transaction_id)
+        # print(sent_transaction_id,res_transaction_id)
         raise RuntimeError("Transaction ID doesnt match in announce response! Expected %s, got %s"
             % (sent_transaction_id, res_transaction_id))
     if action == 0x1:
-        print("Action is 3")
+        # print("Action is 3")
         ret = dict()
         offset = 8; #next 4 bytes after action is transaction_id, so data doesnt start till byte 8
         ret['interval'] = unpack_from("!i", buf, offset)[0]

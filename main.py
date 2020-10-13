@@ -21,15 +21,16 @@ def active_peer(clientsocket,peer_bitfield):
     resp = parse_peer_response(message)
     if resp:
         print(ip,port)
-        input('done')
         req = create_have_request(clientsocket,peer_bitfield)
-        input("waiting.......")
+        print("done with req")
     else:
         return
 
-
+threads=[]
 for tracker in trackers:
     tracker = urlparse(tracker[0])
+    if 0 not in recieved_data:
+        break
     try:
         if tracker.scheme == 'udp':
             print('connecting to: ', tracker.hostname)
@@ -38,10 +39,10 @@ for tracker in trackers:
             sock.sendto(request, connection)
             buffer = sock.recvfrom(1048)[0]
             connection_id = udp_parse_connection_response(buffer, transaction_id)
-            print("conn id",connection_id)
+            # print("conn id",connection_id)
 
             req,transaction_id = create_udp_announce_request(connection_id,hashes)
-            print("req=",req)
+            # print("req=",req)
             sock.sendto(req,connection)
             buf = sock.recvfrom(1048)[0]
             ret,peers=udp_parse_announce_response(buf, transaction_id)
@@ -73,18 +74,19 @@ for tracker in trackers:
                         messages.append(message)
                 if messages==[]:
                     continue
-                [print(message) for message in messages]
-                print("messages =",messages)
+                # [print(message) for message in messages]
+                # print("messages =",messages)
 
                 if len(messages)>=1:
                     flag,peer_bitfield = parse_bitfield(messages)
                     print(flag)
                 if not flag or not peer_bitfield: #at this point, we have bitfield
-                    input(flag)
                     continue
 
-                active_peer(clientsocket,peer_bitfield)
-                # check = input('waiting.....')
+                t = Thread(target=active_peer,args=(clientsocket, peer_bitfield,))
+                threads.append(t)
+                # active_peer(clientsocket,peer_bitfield)
+                t.start()
 
         elif tracker.scheme == 'http':
             pass  # do nothing for now
