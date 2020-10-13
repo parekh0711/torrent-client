@@ -1,7 +1,3 @@
-#https://github.com/eliasson/pieces/blob/master/pieces/protocol.py
-#https://github.com/gallexis/pytorrent
-
-
 from udp import *
 from peer import *
 from _thread import start_new_thread
@@ -11,7 +7,7 @@ my_torrent = Torrent.from_file('../trial.torrent')
 trackers = my_torrent.announce_urls
 hashes=[my_torrent.info_hash]
 
-for tracker in trackers[0:30]:
+for tracker in trackers:
     tracker = urlparse(tracker[0])
     try:
         if tracker.scheme == 'udp':
