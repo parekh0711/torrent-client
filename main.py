@@ -7,6 +7,27 @@ my_torrent = Torrent.from_file('../trial.torrent')
 trackers = my_torrent.announce_urls
 hashes=[my_torrent.info_hash]
 
+def active_peer(clientsocket,peer_bitfield):
+    buffer = create_interested_message()
+    print("sending interested")
+    clientsocket.send(buffer)
+    clientsocket.settimeout(2)
+    try:
+        message = clientsocket.recv(2048)
+    except Exception as e:
+        print("failed",e)
+        return
+    print("parsing peer")
+    resp = parse_peer_response(message)
+    if resp:
+        print(ip,port)
+        input('done')
+        req = create_have_request(clientsocket,peer_bitfield)
+        input("waiting.......")
+    else:
+        return
+
+
 for tracker in trackers:
     tracker = urlparse(tracker[0])
     try:
@@ -25,7 +46,6 @@ for tracker in trackers:
             buf = sock.recvfrom(1048)[0]
             ret,peers=udp_parse_announce_response(buf, transaction_id)
 
-            print("yoyoyo")
             handshake,peer_id=create_handshake_message(hashes)
 
             for index in range(len(peers)):
@@ -55,34 +75,15 @@ for tracker in trackers:
                     continue
                 [print(message) for message in messages]
                 print("messages =",messages)
+
                 if len(messages)>=1:
-                    flag,bitfield = parse_bitfield(messages)
+                    flag,peer_bitfield = parse_bitfield(messages)
                     print(flag)
-                if not flag: #at this point, we have bitfield
+                if not flag or not peer_bitfield: #at this point, we have bitfield
                     input(flag)
                     continue
 
-                buffer = create_interested_message()
-                print("sending interested")
-                clientsocket.send(buffer)
-                clientsocket.settimeout(2)
-                try:
-                    message = clientsocket.recv(2048)
-                except Exception as e:
-                    print("failed",e)
-                    continue
-                print("parsing peer")
-                resp = parse_peer_response(message)
-                if resp:
-                    print(ip,port)
-                    input('done')
-                    data = ''
-                    for _ in range(len(bitfield)):
-                        data+='0'
-                    req = create_have_request(clientsocket,bitfield,data)
-                    input("waiting.......")
-                else:
-                    continue
+                active_peer(clientsocket,peer_bitfield)
                 # check = input('waiting.....')
 
         elif tracker.scheme == 'http':

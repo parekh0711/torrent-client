@@ -1,48 +1,52 @@
 from modules import *
 
+def find_rarest(peer_bitfield):
+    global bitfield,recieved_data,total_size,total_pieces,piece_len
+    sorted_indices = sorted(range(len(recieved_data)), key=lambda k:(recieved_data[k],bitfield[k],))
+    # input(sorted_indices)
+    for index in sorted_indices:
+        if recieved_data[index]!=1 and peer_bitfield[index]==1:
+            return index,True
+    return -1,False
 
-def create_have_request(socket,bitfield,data):
-    torr = open('../trial.torrent','rb')
-    _dic = bencodepy.decode(torr.read())
-    hash_string = _dic[b'info'][b'pieces']
-    total_size = _dic[b'info'][b'length']
-    print(total_size)
-    total_pieces = len(hash_string)//20
-    piece_len = _dic[b'info'][b'piece length']
-    t = input(bitfield)
-    if t!='y':
-        return
-    for index,piece in enumerate(data):
-        if piece=='0' and bitfield[index]=='1':
-            buf = pack(">IB",13,6)
-            buf += pack("!i",index)
-            buf += pack("!i",0)
-            if index==total_pieces-1:
-                lg = total_size%piece_len
-                input(lg)
-            else:
-                lg = piece_len
-            buf += pack("!i",lg)
-            # print(buf)
-            socket.send(buf)
-            resp=b''
-            print("yo")
-            socket.settimeout(4)
-            while True:
-                try:
-                    temp =socket.recv(32768)
-                    resp+=temp
-                except:
-                    break
-            check = parse_piece_request(resp,index,hash_string,piece_len)
-            if check:
-                data= data[:index]+'1'+ data[index+1:]
-            else:
-                print("hash didnt match")
+def create_have_request(socket,peer_bitfield):
+    global bitfield,recieved_data,total_size,total_pieces,piece_len
+    while True:
+        index,check = find_rarest(peer_bitfield)
+        if not check: #We have taken all possible pieces from this peer
+            return
+        print("REQUESTING PIECE",index)
+        buf = pack(">IB",13,6)
+        buf += pack("!i",index)
+        buf += pack("!i",0)
+        if index==total_pieces-1:
+            lg = total_size%piece_len
+            input(lg)
+        else:
+            lg = piece_len
+        buf += pack("!i",lg)
+        socket.send(buf)
+        resp=b''
+        print("yo")
+        socket.settimeout(2)
+        while True:
+            try:
+                temp =socket.recv(32768)
+                resp+=temp
+            except:
+                break
+        check = parse_piece_request(resp,index)
+        if check:
+            with lock:
+                recieved_data[index]=1
+                bitfield[index]=9999
+        else:
+            print("hash didnt match")
     print("sorry")
-    print("data = ",data)
+    print("data = ",recieved_data)
 
-def parse_piece_request(resp,off,hash_string,piece_len):
+def parse_piece_request(resp,off):
+    global hash_string
     length = unpack_from("!i",resp)[0]
     id = unpack_from("!b",resp,4)[0]
     piece = unpack_from("!i",resp,5)[0]
@@ -57,29 +61,22 @@ def parse_piece_request(resp,off,hash_string,piece_len):
         print(hash_recieved,hash_string[off*20:(off*20)+20])
         return False
     fn = 'Too Much and Never Enough - Mary Trump.epub'
-    writePiece(fn,off,data,piece_len)
+    writePiece(fn,off,data)
     print(length,id,piece,block)
     return True
 
-def write(filename,data,offset):
-     try:
-         f = open(filename,'r+b')
-     except IOError:
-         f = open(filename,'wb')
-     f.seek(offset)
-     f.write(data)
-     f.close()
-
-def writePiece(filename, pieceindex, data,piece_len):
+def writePiece(filename, pieceindex, data):
+    global bitfield,recieved_data,total_size,total_pieces,piece_len
     if not os.path.exists(filename):
         os.mknod(filename)
-    file = open(filename,"r+b")
-    little = pack('<'+'B'*len(data), *data)
-    file.seek(pieceindex * piece_len)
-    file.write(little)
-    file.flush()
-    print("Wrote (%d) bytes of piece (%d) to %s" % (len(data), pieceindex, filename))
-    file.close()
+    with lock:
+        file = open(filename,"r+b")
+        little = pack('<'+'B'*len(data), *data)
+        file.seek(pieceindex * piece_len)
+        file.write(little)
+        file.flush()
+        print("Wrote (%d) bytes of piece (%d) to %s" % (len(data), pieceindex, filename))
+        file.close()
 
 
 

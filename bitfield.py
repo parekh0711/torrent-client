@@ -1,28 +1,28 @@
-from struct import *
+from modules import *
+
 
 def parse_bitfield(bufs):
+    global bitfield
     if len(bufs)==1:
         buf = bufs[0][68:]
         length = unpack_from("!i", buf)[0]
         if length == len(buf)-4 and buf[4]==5:
-            bitfield = buf[5:].hex()
-            pieces= bin(int(bitfield, base=16))[2:]
-            print(pieces)
-            print(len(pieces))
-            return True,pieces
+            bf = buf[5:].hex()
+            pieces = bin(int(bf, base=16))[2:]
+            peer_list = modify(pieces)
+            return True, peer_list
         else:
             print("false")
-            return False, None
+            return False,None
     elif len(bufs)==2:
         buf = bufs[1]
         length = unpack_from("!i", buf)[0]
         if length == len(buf)-4 and buf[4]==5:
             #This case is when the second message is the bitfield only.
-            bitfield = buf[5:].hex()
-            pieces= bin(int(bitfield, base=16))[2:]
-            print(pieces)
-            print(len(pieces))
-            return True,pieces
+            bf = buf[5:].hex()
+            pieces= bin(int(bf, base=16))[2:]
+            peer_list = modify(pieces)
+            return True,peer_list
         else:
             buf = bufs[0]
             buf = bufs[0][68:]
@@ -31,42 +31,53 @@ def parse_bitfield(bufs):
                 print(length)
             buf = bufs[1]
             if len(buf)==length-1:   #if length is send with req 1 and bitfield only in req 2
-                bitfield = buf.hex()
-                pieces= bin(int(bitfield, base=16))[2:]
-                print(pieces)
-                print(len(pieces))
-                return True,pieces
+                bf = buf.hex()
+                pieces= bin(int(bf, base=16))[2:]
+                peer_list = modify(pieces)
+                return True, peer_list
             else:
                 buf=bufs[0][68:]
                 buf+=bufs[1]
                 print(buf)
                 length=buf[3]
-                bitfield = buf[5:length+4].hex()
-                pieces= bin(int(bitfield, base=16))[2:]
+                bf = buf[5:length+4].hex()
+                pieces= bin(int(bf, base=16))[2:]
                 print(pieces)
                 print(len(pieces))
                 try:
                     buf = buf[length+4:]
                 except:
-                    return True,pieces
-                print(buf)
+                    peer_list = modify(pieces)
+                    return True, peer_list
                 parse_have(buf,pieces)
-                return True,pieces
-            return False, None
+                peer_list = modify(pieces)
+                return True, peer_list
+            return False,None
     elif len(bufs)==3:
         if bufs[2]==b'\x00\x00\x00\x01\x01':
             buf = bufs[1]
             length = unpack_from("!i", buf)[0]
             if length == len(buf)-4 and buf[4]==5:
-                bitfield = buf[5:].hex()
-                pieces= bin(int(bitfield, base=16))[2:]
-                print(pieces)
-                print(len(pieces))
-                return True,pieces
+                bf = buf[5:].hex()
+                pieces= bin(int(bf, base=16))[2:]
+                peer_list = modify(pieces)
+                return True, peer_list
             else:
                 print("false")
-                return False, None
+                return False,None
     return False,None
+
+def modify(p):
+    global bitfield
+    p = list(map(int,list(p)))
+    if len(p)!=len(bitfield):
+        print("len mismatch")
+        return None
+    print(len(p),len(bitfield))
+    with lock:
+        for index in range(len(bitfield)):
+            bitfield[index]+=p[index]
+    return p
 
 def parse_have(buf,pieces):
     while True:
@@ -77,11 +88,7 @@ def parse_have(buf,pieces):
                 have=have[5:]
                 print(have)
                 piece=unpack_from("!i", have)[0]
-                # print(piece)
-                # print(pieces[piece])
                 pieces=pieces[0:piece]+'1'+pieces[piece+1:]
-                # print(pieces[piece])
             buf=buf[9:]
         except:
-            # input('return ho gaya')
             return pieces
