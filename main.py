@@ -3,7 +3,7 @@ from peer import *
 from _thread import start_new_thread
 from bitfield import *
 from piece import *
-my_torrent = Torrent.from_file('../trial.torrent')
+my_torrent = Torrent.from_file('../trial2.torrent')
 trackers = my_torrent.announce_urls
 hashes=[my_torrent.info_hash]
 

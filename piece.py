@@ -10,6 +10,18 @@ def find_rarest(peer_bitfield):
                 return index,True
     return -1,False
 
+def parse_block_request(resp,off,p_off):
+    length = unpack_from("!i",resp)[0]
+    id = unpack_from("!b",resp,4)[0]
+    piece = unpack_from("!i",resp,5)[0]
+    block = unpack_from("!i",resp,9)[0]
+    # print(piece,off,id,block,p_off)
+    if piece!=off or id!=7:
+        return b''
+    data=resp[13:length+4]
+    # print("returning data")
+    return data
+
 def create_have_request(socket,peer_bitfield):
     global bitfield,recieved_data,total_size,total_pieces,piece_len
     while True:
@@ -18,24 +30,63 @@ def create_have_request(socket,peer_bitfield):
             print("data = ",recieved_data) #We have taken all possible pieces from this peer
             return
         print("REQUESTING PIECE",index)
-        buf = pack(">IB",13,6)
-        buf += pack("!i",index)
-        buf += pack("!i",0)
-        if index==total_pieces-1:
-            lg = total_size%piece_len
-            # input(lg)
+        if piece_len>16384 and (index!=total_pieces-1 or total_size%piece_len>16384):
+            resp=b''
+            for piece_index in range(round(piece_len/16384)):
+                buf = pack(">IB",13,6)
+                buf += pack("!i",index)
+                buf += pack("!i",piece_index*16384)
+                if index==total_pieces-1:
+                    lg = total_size%16384
+                else:
+                    lg = 16384
+                buf += pack("!i",lg)
+                socket.send(buf)
+                # print("sent ",buf)
+                res=b''
+                socket.settimeout(4)
+                while True:
+                    try:
+                        temp =socket.recv(32768)
+                        res+=temp
+                    except:
+                        break
+                if res==b'':
+                    break
+                check=parse_block_request(res,index,piece_index)
+                if check!=b'':
+                    resp+=check
+                else:
+                    res=b''
+                    break
+            start = pack("!i",piece_len)
+            start +=pack("!b",7)
+            start += pack("!i",index)
+            start +=pack("!i",0)
+            resp=start+resp
+            if res==b'':
+                print("problem")
+                continue
         else:
-            lg = piece_len
-        buf += pack("!i",lg)
-        socket.send(buf)
-        resp=b''
-        socket.settimeout(2)
-        while True:
-            try:
-                temp =socket.recv(32768)
-                resp+=temp
-            except:
-                break
+            buf = pack(">IB",13,6)
+            buf += pack("!i",index)
+            buf += pack("!i",0)
+            if index==total_pieces-1:
+                lg = total_size%piece_len
+            else:
+                lg = piece_len
+            buf += pack("!i",lg)
+            bufs = [buf]
+            socket.send(buf)
+            resp=b''
+            socket.settimeout(2)
+            while True:
+                try:
+                    temp =socket.recv(32768)
+                    resp+=temp
+                except:
+                    break
+        # input(resp)
         check = parse_piece_request(resp,index)
         if check:
             with lock:
@@ -46,21 +97,21 @@ def create_have_request(socket,peer_bitfield):
     print("data = ",recieved_data)
 
 def parse_piece_request(resp,off):
-    global hash_string
+    global hash_string,file_name
     length = unpack_from("!i",resp)[0]
     id = unpack_from("!b",resp,4)[0]
     piece = unpack_from("!i",resp,5)[0]
     if piece!=off or id!=7:
-        # print(length,id,piece)
+        # print(length,id,piece
         return False
-    block = unpack_from("!i",resp,9)
-    data=resp[13:length+4]
+    block = unpack_from("!i",resp,9)[0]
+    data=resp[13:]
     hash_object = hashlib.sha1(data)
     hash_received = hash_object.digest()
     if hash_received!=hash_string[off*20:(off*20)+20]:
         # print(hash_recieved,hash_string[off*20:(off*20)+20])
         return False
-    fn = 'Too Much and Never Enough - Mary Trump.epub'
+    fn = file_name
     writePiece(fn,off,data)
     # print(length,id,piece,block)
     return True

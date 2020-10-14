@@ -13,12 +13,15 @@ import bencodepy
 from threading import Thread,Lock
 lock = Lock()
 
-torr = open('../trial.torrent','rb')
+torr = open('../trial2.torrent','rb')
 _dic = bencodepy.decode(torr.read())
 hash_string = _dic[b'info'][b'pieces']
+file_name = _dic[b'info'][b'name'].decode()
 total_size = _dic[b'info'][b'length']
 total_pieces = len(hash_string)//20
 piece_len = _dic[b'info'][b'piece length']
+# print(file_name)
+print(piece_len)
 recieved_data = [0 for _ in range(total_pieces)]
 bitfield = [0 for _ in range(total_pieces)]
 while len(bitfield)%8!=0:
