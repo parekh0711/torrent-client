@@ -4,7 +4,6 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
 
 def udp_parse_connection_response(buf, sent_transaction_id):
-
     print('connecting')
     if len(buf) < 16:
         raise RuntimeError("Wrong response length getting connection id: %s" % len(buf))
@@ -62,7 +61,7 @@ def create_udp_announce_request(connection_id, hashes):
     return (buf, transaction_id)
 
 def udp_parse_announce_response(buf, sent_transaction_id):
-
+    print(buf)
     if len(buf) < 20:
         raise RuntimeError("Wrong response length while announcing: %s" % len(buf))
     action = unpack_from("!i", buf)[0] #first 4 bytes is action
@@ -76,13 +75,13 @@ def udp_parse_announce_response(buf, sent_transaction_id):
         ret = dict()
         offset = 8; #next 4 bytes after action is transaction_id, so data doesnt start till byte 8
         ret['interval'] = unpack_from("!i", buf, offset)[0]
-        print ("Interval:"+str(ret['interval']))
+        # print ("Interval:"+str(ret['interval']))
         offset += 4
         ret['leeches'] = unpack_from("!i", buf, offset)[0]
-        print("Leeches:"+str(ret['leeches']))
+        # print("Leeches:"+str(ret['leeches']))
         offset += 4
         ret['seeds'] = unpack_from("!i", buf, offset)[0]
-        print("Seeds:"+str(ret['seeds']))
+        # print("Seeds:"+str(ret['seeds']))
         offset += 4
         peers = list()
         x = 0

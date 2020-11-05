@@ -32,21 +32,12 @@ def create_have_request(socket,peer_bitfield):
         print("REQUESTING PIECE",index)
         if piece_len>16384 and (index!=total_pieces-1 or total_size%piece_len>16384):
             resp=b''
-            if index!=total_pieces-1:
-                calculated_length=round(piece_len/16384)
-            else:
-                calculated_length=round(total_size%piece_len/16384)
-            for piece_index in range(calculated_length):
+            for piece_index in range(round(piece_len/16384)):
                 buf = pack(">IB",13,6)
                 buf += pack("!i",index)
                 buf += pack("!i",piece_index*16384)
-                if piece_index==calculated_length-1:
-                    if index==total_pieces-1:
-                        lg = (total_size%piece_len)%16384
-                    elif index!=total_pieces-1 and piece_len%16384!=0:
-                        lg = piece_len%16384
-                    else:
-                        lg=16384
+                if index==total_pieces-1:
+                    lg = total_size%16384
                 else:
                     lg = 16384
                 buf += pack("!i",lg)

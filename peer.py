@@ -12,7 +12,7 @@ def create_handshake_message(hashes):
         buffer += pack("!20s", hex_repr)
     peer_id = '-MY0001-123456654321'.encode()
     buffer += peer_id
-    print("buffer=",buffer)
+    # print("buffer=",buffer)
     return buffer,peer_id
 
 def create_interested_message():
@@ -35,7 +35,7 @@ def create_unchoke_message():
 
 def parse_peer_response(message):
     if not message:
-        print(message)
+        # print(message)
         print("Nothing recieved")
         return False
     # print(message)

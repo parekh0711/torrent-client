@@ -14,20 +14,15 @@ def active_peer(clientsocket,peer_bitfield):
     print("sending interested")
     clientsocket.send(buffer)
     clientsocket.settimeout(2)
-    while True:
-        try:
-            message = clientsocket.recv(2048)
-            if message:
-                break
-            else:
-                continue
-        except Exception as e:
-            # print("failed",e)
-            return
-    # print("parsing peer")
+    try:
+        message = clientsocket.recv(2048)
+    except Exception as e:
+        print("failed",e)
+        return
+    print("parsing peer")
     resp = parse_peer_response(message)
     if resp:
-        # print(ip,port)
+        print(ip,port)
         req = create_have_request(clientsocket,peer_bitfield)
         print("done with req")
     else:
@@ -42,24 +37,27 @@ while 0 in recieved_data:
             break
         try:
             if tracker.scheme == 'udp':
-                print('connecting to: ', tracker.hostname)
-                connection = (socket.gethostbyname(tracker.hostname), tracker.port)
-                request, transaction_id = udp_create_connection_request()
-                sock.sendto(request, connection)
-                buffer = sock.recvfrom(1048)[0]
-                connection_id = udp_parse_connection_response(buffer, transaction_id)
-                # print("conn id",connection_id)
-
-                req,transaction_id = create_udp_announce_request(connection_id,hashes)
-                # print("req=",req)
-                sock.sendto(req,connection)
-                buf = sock.recvfrom(1048)[0]
-                try:
-                    ret,peers=udp_parse_announce_response(buf, transaction_id)
-                except:
-                    continue
-
+                # print('connecting to: ', tracker.hostname)
+                # connection = (socket.gethostbyname(tracker.hostname), tracker.port)
+                # request, transaction_id = udp_create_connection_request()
+                # sock.sendto(request, connection)
+                # buffer = sock.recvfrom(1048)[0]
+                # connection_id = udp_parse_connection_response(buffer, transaction_id)
+                # # print("conn id",connection_id)
+                #
+                # req,transaction_id = create_udp_announce_request(connection_id,hashes)
+                # # print("req=",req)
+                # sock.sendto(req,connection)
+                # buf = sock.recvfrom(1048)[0]
+                # try:
+                #     ret,peers=udp_parse_announce_response(buf, transaction_id)
+                # except:
+                #     continue
+                #
                 handshake,peer_id=create_handshake_message(hashes)
+                print(handshake)
+                print("Now trying")
+                peers = [{'IP':"127.0.0.1","port":6883}]
                 for index in range(len(peers)):
                     ip=peers[index]['IP']
                     port=peers[index]['port']
@@ -83,20 +81,26 @@ while 0 in recieved_data:
                         try:
                             message = clientsocket.recv(4096)
                         except:
-                            if messages!=[]:
-                                break
+                            input("hi1")
+                            break
                         if not message:
+                            input("hi2")
                             break
                         else:
                             messages.append(message)
                     if messages==[]:
+                        input("hi3")
                         continue
+                    # [print(message) for message in messages]
+                    # print("messages =",messages)
+                    print("hola")
                     if len(messages)>=1:
                         flag,peer_bitfield = parse_bitfield(messages)
-                        # print(flag)
+                        print(flag)
                     if not flag or not peer_bitfield: #at this point, we have bitfield
-                        # print(flag,bitfield)
+                        print(flag,bitfield)
                         continue
+                    print("I am here")
                     t = Thread(target=active_peer,args=(clientsocket, peer_bitfield,))
                     threads.append(t)
                     # active_peer(clientsocket,peer_bitfield)
