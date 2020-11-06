@@ -11,9 +11,11 @@ import os
 import hashlib
 from bencodepy import decode,encode
 from threading import Thread,Lock
+from collections import defaultdict
 lock = Lock()
 multi_torrent_flag = False
-torr = open('../trial.torrent','rb')
+torr = open('../trial2.torrent','rb')
+from time import sleep
 
 
 _dic = decode(torr.read())
@@ -53,6 +55,8 @@ while len(bitfield)%8!=0:
 
 # print(total_pieces)
 connected_peers=[]
+download_rates = defaultdict(lambda:0)
+end_all_threads = False
 # print(round(65536/16384))
 # print(round(total_size%piece_len/16384))
 # print(total_size%piece_len)

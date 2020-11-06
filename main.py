@@ -9,7 +9,7 @@ import sys
 # input(trackers)
 # hashes=[my_torrent.info_hash]
 
-def active_peer(clientsocket,peer_bitfield):
+def active_peer(clientsocket,peer_bitfield,ip_address):
     buffer = create_interested_message()
     print("sending interested")
     clientsocket.send(buffer)
@@ -23,15 +23,22 @@ def active_peer(clientsocket,peer_bitfield):
                 continue
         except Exception as e:
             # print("failed",e)
+            if ip_address in connected_peers:
+                connected_peers.remove(ip_address)
             return
     # print("parsing peer")
     resp = parse_peer_response(message)
     if resp:
         # print(ip,port)
-        req = create_have_request(clientsocket,peer_bitfield)
+        req = create_have_request(clientsocket,peer_bitfield,ip_address)
         print("done with req")
     else:
+        if ip_address in connected_peers:
+            connected_peers.remove(ip_address)
         return
+    if ip_address in connected_peers:
+        connected_peers.remove(ip_address)
+    return
 
 threads=[]
 
@@ -97,7 +104,7 @@ while 0 in recieved_data:
                     if not flag or not peer_bitfield: #at this point, we have bitfield
                         # print(flag,bitfield)
                         continue
-                    t = Thread(target=active_peer,args=(clientsocket, peer_bitfield,))
+                    t = Thread(target=active_peer,args=(clientsocket, peer_bitfield,ip,))
                     threads.append(t)
                     # active_peer(clientsocket,peer_bitfield)
                     t.start()

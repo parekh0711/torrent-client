@@ -9,7 +9,7 @@ import sys
 # input(trackers)
 # hashes=[my_torrent.info_hash]
 
-def active_peer(clientsocket,peer_bitfield):
+def active_peer(clientsocket,peer_bitfield,ip_address):
     buffer = create_interested_message()
     print("sending interested")
     clientsocket.send(buffer)
@@ -23,15 +23,22 @@ def active_peer(clientsocket,peer_bitfield):
                 continue
         except Exception as e:
             print("failed",e)
+            if ip_address in connected_peers:
+                connected_peers.remove(ip_address)
             return
     print("parsing peer")
     resp = parse_peer_response(message)
     if resp:
         print(ip,port)
-        req = create_have_request(clientsocket,peer_bitfield)
+        req = create_have_request(clientsocket,peer_bitfield,ip_address)
         print("done with req")
     else:
+        if ip_address in connected_peers:
+            connected_peers.remove(ip_address)
         return
+    if ip_address in connected_peers:
+        connected_peers.remove(ip_address)
+    return
 
 threads=[]
 
@@ -63,7 +70,7 @@ while 0 in recieved_data:
                 handshake,peer_id=create_handshake_message(hashes)
                 print(handshake)
                 print("Now trying")
-                peers = [{'IP':"127.0.0.1","port":9005}]
+                peers = [{'IP':"127.0.0.1","port":9008}]
                 for index in range(len(peers)):
                     ip=peers[index]['IP']
                     port=peers[index]['port']
@@ -110,7 +117,7 @@ while 0 in recieved_data:
                     input("I am here")
                     # t = Thread(target=active_peer,args=(clientsocket, peer_bitfield,))
                     # threads.append(t)
-                    active_peer(clientsocket,peer_bitfield)
+                    active_peer(clientsocket,peer_bitfield,ip)
                     input("done")
                     # t.start()
                     connected_peers.append(ip)
