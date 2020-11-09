@@ -24,21 +24,22 @@ def parse_block_request(resp,off,p_off):
 
 def create_have_request(socket,peer_bitfield,ip_address):
     global bitfield,recieved_data,total_size,total_pieces,piece_len
-    while True:
-        print(download_rates)
+    while 0 in recieved_data:
+        # print(download_rates)
+        # print("hi")
         index,check = find_rarest(peer_bitfield)
         if end_all_threads == True:
             return
         if not check:
             #We have taken all possible pieces from this peer
             return
-        print("REQUESTING PIECE",index)
+        # print("REQUESTING PIECE",index)
         if piece_len>16384 and (index!=total_pieces-1 or total_size%piece_len>16384):
             resp=b''
             if index!=total_pieces-1:
-                calculated_length=round(piece_len/16384)
+                calculated_length=math.ceil(piece_len/16384)
             else:
-                calculated_length=round(total_size%piece_len/16384)
+                calculated_length=math.ceil(total_size%piece_len/16384)
             for piece_index in range(calculated_length):
                 buf = pack(">IB",13,6)
                 buf += pack("!i",index)
@@ -53,7 +54,7 @@ def create_have_request(socket,peer_bitfield,ip_address):
                 else:
                     lg = 16384
                 buf += pack("!i",lg)
-                print("REQUESTING BLOCK {} IN PIECE {} WITH SIZE {}".format(piece_index,index,lg))
+                # print("REQUESTING BLOCK {} IN PIECE {} WITH SIZE {}".format(piece_index,index,lg))
                 socket.send(buf)
                 res=b''
                 socket.settimeout(4)
@@ -77,7 +78,7 @@ def create_have_request(socket,peer_bitfield,ip_address):
             start +=pack("!i",0)
             resp=start+resp
             if res==b'':
-                print("problem")
+                # print("problem")
                 continue
         else:
             buf = pack(">IB",13,6)
@@ -106,20 +107,20 @@ def create_have_request(socket,peer_bitfield,ip_address):
                 bitfield[index]=9999
                 download_rates[ip_address]+=1
         else:
-            print("hash didnt match")
-    # print("data = ",recieved_data)
+            # print("hash didnt match")
+            pass
     return
 
 def parse_piece_request(resp,off):
     global hash_string,file_name
     if len(resp)==0:
-        print("length is 0")
+        # print("length is 0")
         return False
     length = unpack_from("!i",resp)[0]
     id = unpack_from("!b",resp,4)[0]
     piece = unpack_from("!i",resp,5)[0]
     if piece!=off or id!=7:
-        print("keeda",id,piece,off)
+        # print("keeda",id,piece,off)
         return False
     block = unpack_from("!i",resp,9)[0]
     data=resp[13:]
@@ -129,7 +130,7 @@ def parse_piece_request(resp,off):
         # print(hash_recieved,hash_string[off*20:(off*20)+20])
         return False
     fn = file_name
-    writePiece(fn,off,data)
+    writePiece(output_path+temp_name+fn,off,data)
     # print(length,id,piece,block)
     return True
 

@@ -248,7 +248,7 @@ def peer_thread(conn,addr):
 			if spec[2]<=16384 and spec[2]<=piece_len:#spec[2] has the requested len
 				# print("entered with ",index,spec[1])
 				with lock:
-					file = open(file_name,"r+b")
+					file = open(output_path+temp_name+file_name,"r+b")
 					file.seek((index * piece_len)+spec[1])
 					data=file.read(spec[2])
 					file.close()
@@ -265,21 +265,23 @@ def peer_thread(conn,addr):
 peers=[]
 choked=[]
 unchoked=[]
-ip = '127.0.0.1'
-port = 9008
-server.bind((ip, port))
-server.listen(100)
-print("listening for connections")
-start_new_thread(choke_unchoke_mechanism,())
-while True:
-	conn, addr = server.accept()
-	print("accepted")
-	with lock:
-		peers.append(addr)
-	if len(peers)<4:
-		unchoked.append(addr)
-	else:
-		choked.append(addr)
-	start_new_thread(peer_thread,(conn,addr))
+seed_ip = ''
+seed_port = 6889
 
-server.close()
+def seeder_main():
+	server.bind((seed_ip, seed_port))
+	server.listen(100)
+	print("listening for connections")
+	start_new_thread(choke_unchoke_mechanism,())
+	while True:
+		conn, addr = server.accept()
+		print("accepted")
+		with lock:
+			peers.append(addr)
+		if len(peers)<4:
+			unchoked.append(addr)
+		else:
+			choked.append(addr)
+		start_new_thread(peer_thread,(conn,addr))
+
+	server.close()

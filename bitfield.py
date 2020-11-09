@@ -12,7 +12,7 @@ def parse_bitfield(bufs):
             peer_list = modify(pieces)
             return True, peer_list
         else:
-            print("false")
+            # print("false")
             return False,None
     elif len(bufs)==2:
         buf = bufs[1]
@@ -59,7 +59,7 @@ def parse_bitfield(bufs):
                 peer_list = modify(pieces)
                 return True, peer_list
             else:
-                print("false")
+                # print("false")
                 return False,None
     return False,None
 
@@ -67,7 +67,7 @@ def modify(p):
     global bitfield
     p = list(map(int,list(p)))
     if len(p)!=len(bitfield):
-        print("len mismatch",p,len(bitfield))
+        # print("len mismatch",p,len(bitfield))
         return None
     with lock:
         for index in range(len(bitfield)):

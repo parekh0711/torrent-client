@@ -3,64 +3,34 @@ import socket
 import binascii
 import logging
 from urllib import parse
-from urllib.parse import urlparse
-from torrentool.api import Torrent
+from urllib.parse import urlparse,urlencode
 from struct import *
 from select import *
 import os
 import hashlib
 from bencodepy import decode,encode
 from threading import Thread,Lock
-from collections import defaultdict
-lock = Lock()
-multi_torrent_flag = False
-torr = open('../trial2.torrent','rb')
+import requests
 from time import sleep
+import math
 
+lock = Lock()
 
-_dic = decode(torr.read())
-hash_string = _dic[b'info'][b'pieces']
-file_name = _dic[b'info'][b'name'].decode()
+multi_torrent_flag = 0
+hash_string = 0
+file_name = 0
 total_size=0
-if b'files' in _dic[b'info'].keys():
-    multi_torrent_flag = True
-    ls=_dic[b'info'][b'files']
-    for e in ls:
-        total_size+=e[b'length']
-        # print(e[b'length'],e[b'path'][0].decode())
-else:
-    total_size = _dic[b'info'][b'length']
-
-
-total_pieces = len(hash_string)//20
-piece_len = _dic[b'info'][b'piece length']
-tr = encode(_dic[b'info'])
-hashes=[hashlib.sha1(tr).hexdigest()]
-# print(hashes)
-
-ty=_dic[b'announce-list']
-trackers=[]
-for i in range(len(ty)):
-	a=[]
-	url=ty[i][0].decode()
-	a.append(url)
-	trackers.append(a)
-
-# print(trackers)
-# print(piece_len)
-recieved_data = [0 for _ in range(total_pieces)]
-bitfield = [0 for _ in range(total_pieces)]
-while len(bitfield)%8!=0:
-    bitfield.append(0)
-
-# print(total_pieces)
-connected_peers=[]
-download_rates = defaultdict(lambda:0)
-end_all_threads = False
-# print(round(65536/16384))
-# print(round(total_size%piece_len/16384))
-# print(total_size%piece_len)
-# print(round(total_size%piece_len/16384))
-# print(total_size)
-# print()
-#507637
+multi_torrent_flag=0
+total_pieces = 0
+piece_len = 0
+hashes=0
+trackers=0
+recieved_data = 0
+bitfield = 0
+connected_peers=0
+download_rates = 0
+end_all_threads = 0
+allowed_length = 100
+files_details= 0
+temp_name = ''
+output_path=''

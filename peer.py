@@ -36,15 +36,15 @@ def create_unchoke_message():
 def parse_peer_response(message):
     if not message:
         # print(message)
-        print("Nothing recieved")
+        # print("Nothing recieved")
         return False
     # print(message)
     # print(message[3])
     # print(message[4])
     if message[4]==1 and message[3]==1:
-        print("unchoked")
+        # print("unchoked")
         return True
-    print("Not unchoked, recieved",message)
+    # print("Not unchoked, recieved",message)
     return False
 
 

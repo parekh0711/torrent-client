@@ -4,7 +4,7 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(5)
 
 def udp_parse_connection_response(buf, sent_transaction_id):
-    print('connecting')
+    # print('connecting')
     if len(buf) < 16:
         raise RuntimeError("Wrong response length getting connection id: %s" % len(buf))
     action = unpack_from("!i", buf)[0]  # first 4 bytes is action
@@ -15,7 +15,6 @@ def udp_parse_connection_response(buf, sent_transaction_id):
                        % (sent_transaction_id, res_transaction_id))
     if action == 0x0:
         connection_id = unpack_from("!q", buf, 8)[0]  # unpack 8 bytes from byte 8, should be the connection_id
-        print("succesfully connected")
         return connection_id
     elif action == 0x3:
         error = unpack_from("!s", buf, 8)
@@ -28,7 +27,7 @@ def udp_create_connection_request():
     connection_id = 0x41727101980  # default connection id
     action = 0x0  # action (0 = give me a new connection id)
     transaction_id = int(random.randrange(0, 255))
-    print("Transaction ID :", transaction_id)
+    # print("Transaction ID :", transaction_id)
     buffer = pack("!q", connection_id)  # first 8 bytes is connection id
     buffer += pack("!i", action)  # next 4 bytes is action
     buffer += pack("!i", transaction_id)  # next 4 bytes is transaction id
@@ -57,11 +56,11 @@ def create_udp_announce_request(connection_id, hashes):
     key = udp_get_transaction_id()                                          #Unique key randomized by client
     buf += pack("!i", key)
     buf += pack("!i", -1)                                            #Number of peers required. Set to -1 for default
-    buf += pack("!i", sock.getsockname()[1])                   #port on which response will be sent
+    buf += pack("!i", 6889)
     return (buf, transaction_id)
 
 def udp_parse_announce_response(buf, sent_transaction_id):
-    print(buf)
+    # print(buf)
     if len(buf) < 20:
         raise RuntimeError("Wrong response length while announcing: %s" % len(buf))
     action = unpack_from("!i", buf)[0] #first 4 bytes is action
@@ -102,5 +101,5 @@ def udp_parse_announce_response(buf, sent_transaction_id):
     else:
         #an error occured, try and extract the error string
         error = unpack_from("!s", buf, 8)
-        print("Action="+str(action))
+        # print("Action="+str(action))
         raise RuntimeError("Error while annoucing: %s" % error)
