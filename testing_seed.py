@@ -265,8 +265,8 @@ def peer_thread(conn,addr):
 peers=[]
 choked=[]
 unchoked=[]
-ip = '127.0.0.1'
-port = 9008
+ip = ''
+port = 80
 server.bind((ip, port))
 server.listen(100)
 print("listening for connections")

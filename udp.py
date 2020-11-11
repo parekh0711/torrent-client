@@ -40,11 +40,15 @@ def create_udp_announce_request(connection_id, hashes):
     buf = pack("!q", connection_id)
     buf += pack("!i", action)
     buf += pack("!i", transaction_id)
-    for hash in hashes:
-        hex_repr = binascii.a2b_hex(hash)
-        buf += pack("!20s", hex_repr)
-    peer_id = '-MY0001-123456654321'.encode()
-    buf += peer_id #peer id
+    hex_repr = binascii.a2b_hex(hashes[0])
+    buf += pack("!20s", hex_repr)
+    peer_id = '-MY'
+    for _ in range(4):
+        peer_id+=str(random.randint(0,9))
+    peer_id+='-'
+    for _ in range(12):
+        peer_id+=str(random.randint(0,9))
+    buf += peer_id.encode()
     down = 0x00
     up = 0x00
     left = 0x00

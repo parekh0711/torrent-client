@@ -1,4 +1,5 @@
 from modules import *
+import random
 
 def create_handshake_message(hashes):
     pstrlen = 0x13 # default pstrlen for version 1.0
@@ -7,11 +8,15 @@ def create_handshake_message(hashes):
     buffer = bytes.fromhex("13")
     buffer += pack("!19s", str.encode("BitTorrent protocol"))
     buffer += pack("!q", reserved)  # next 8 bytes is reserved
-    for hash in hashes:
-        hex_repr = binascii.a2b_hex(hash)
-        buffer += pack("!20s", hex_repr)
-    peer_id = '-MY0001-123456654321'.encode()
-    buffer += peer_id
+    hex_repr = binascii.a2b_hex(hashes[0])
+    buffer += pack("!20s", hex_repr)
+    peer_id = '-MY'
+    for _ in range(4):
+        peer_id+=str(random.randint(0,9))
+    peer_id+='-'
+    for _ in range(12):
+        peer_id+=str(random.randint(0,9))
+    buffer += peer_id.encode()
     # print("buffer=",buffer)
     return buffer,peer_id
 

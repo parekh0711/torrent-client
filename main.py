@@ -1,7 +1,7 @@
-def initialise_variables():
+def initialise_variables(torrent_file_name):
     modules.multi_torrent_flag = False
     modules.temp_name=''
-    torr = open('../z.torrent','rb')
+    torr = open(torrent_file_name,'rb')
     _dic = decode(torr.read())
     modules.hash_string = _dic[b'info'][b'pieces']
     modules.file_name = _dic[b'info'][b'name'].decode()
@@ -16,7 +16,7 @@ def initialise_variables():
             modules.total_size+=e[b'length']
             files_details.append((e[b'path'][0].decode(),e[b'length']))
         modules.files_details=files_details
-        input(modules.files_details)
+        # input(modules.files_details)
     else:
         modules.total_size = _dic[b'info'][b'length']
 
@@ -40,6 +40,7 @@ def initialise_variables():
 
     modules.connected_peers=[]
     modules.download_rates = defaultdict(lambda:0)
+    modules.upload_rates = defaultdict(lambda:0)
     modules.end_all_threads = False
     # print(round(modules.total_size%modules.piece_len/16384),modules.total_pieces)
     # input()
@@ -48,7 +49,39 @@ import modules
 import hashlib
 from bencodepy import decode,encode
 from collections import defaultdict
-initialise_variables()
+import sys,os
+
+if len(sys.argv)<2 or len(sys.argv)%2!=0:
+    print("Check running instructions")
+    sys.exit(0)
+
+try:
+    if len(sys.argv)>2:
+        arguments=sys.argv[2:]
+        for idx,argument in enumerate(arguments):
+            if idx%2==0:
+                # print("hi")
+                if argument=="-peers":
+                    modules.allowed_length=int(arguments[idx+1])
+                elif argument=="-path":
+                    modules.output_path=arguments[idx+1]
+                elif argument=="-dk":
+                    modules.allowed_download = int(arguments[idx+1])*125
+                elif argument=="-uk":
+                    modules.allowed_upload = int(arguments[idx+1])*125
+                elif argument=="-dm":
+                    modules.allowed_download = int(arguments[idx+1])*125000
+                elif argument=="-um":
+                    modules.allowed_upload = int(arguments[idx+1])*125000
+                else:
+                    print("Check running instructions")
+                    sys.exit(0)
+                # print(modules.allowed_length,modules.allowed_download,modules.allowed_upload,modules.output_path)
+except Exception as E:
+    print(E)
+    print("Check running instructions")
+    sys.exit(0)
+initialise_variables(sys.argv[1])
 
 from udp import *
 from peer import *
@@ -61,7 +94,6 @@ import sys
 
 def active_peer(clientsocket,peer_bitfield,ip_address):
     buffer = create_interested_message()
-    # print("sending interested")
     clientsocket.send(buffer)
     clientsocket.settimeout(2)
     while True:
@@ -77,7 +109,10 @@ def active_peer(clientsocket,peer_bitfield,ip_address):
                 connected_peers.remove(ip_address)
             return
     # print("parsing peer")
-    resp = parse_peer_response(message)
+    try:
+        resp = parse_peer_response(message)
+    except:
+        return
     if resp:
         # print(ip,port)
         if 0 not in recieved_data:
@@ -93,15 +128,37 @@ def active_peer(clientsocket,peer_bitfield,ip_address):
     return
 
 def update_progress():
-    # cnt =
     while True:
+        os.system('clear')
+        global current_download_speed
         perc = recieved_data.count(1)/len(recieved_data)*100
-        print('\r[{0}] {1}%'.format('#'*round(perc), round(perc,2)),end='')
-        sleep(1)
+        print('[{0}] {1}%'.format('#'*round(perc), round(perc,2)))
+        print("Downloading from {} peers at {} kbps.".format(len(connected_peers),round(current_download_speed/125,2)))
+        sleep(2)
         if 0 not in recieved_data:
             perc = 100
-            print('\r[{0}] {1}%'.format('#'*100,100,end=''))
+            os.system('clear')
+            print('[{0}] {1}%'.format('#'*100,100))
             return
+
+def maintain_download():
+    global current_download_speed,global_sleep_download
+    time_passed=0
+    while 0 in recieved_data:
+        sleep(1)
+        time_passed+=1
+        downloaded_pieces = sum(download_rates.values())
+        current_download_speed=(downloaded_pieces*piece_len)/time_passed
+        if allowed_download>current_download_speed:
+            if global_sleep_download>0:
+                with lock:
+                    global_sleep_download-=1
+            continue
+        else:
+            with lock:
+                global_sleep_download+=1
+    return
+
 
 threads=[]
 
@@ -110,6 +167,8 @@ k.start()
 s = Thread(target=seeder_main,args=())
 s.daemon=True
 s.start()
+d = Thread(target=maintain_download,args=())
+d.start()
 
 while 0 in recieved_data:
     for tracker in trackers:
@@ -124,6 +183,7 @@ while 0 in recieved_data:
             break
         try:
             if tracker.scheme == 'udp':
+                # continue
                 connection = (socket.gethostbyname(tracker.hostname), tracker.port)
                 request, transaction_id = udp_create_connection_request()
                 sock.sendto(request, connection)
@@ -141,6 +201,8 @@ while 0 in recieved_data:
                 except:
                     continue
                 handshake,peer_id=create_handshake_message(hashes)
+                #UNCOMMENT FOR SEEDING DEMO WITH FOSS
+                # peers = [{'IP':"210.212.183.7","port":6885}]
                 for index in range(len(peers)):
                     if 0 not in recieved_data:
                         break
@@ -188,8 +250,8 @@ while 0 in recieved_data:
                     # active_peer(clientsocket,peer_bitfield)
                     t.start()
                     connected_peers.append(ip)
-            elif tracker.scheme == 'http' or tracker.scheme=='https':
-                continue
+            elif 'http' in tracker.scheme:
+                # print("hi")
                 params = {
                     "info_hash" : hashes[0],
                     "peer_id" : '-MY0001-123456654321',
@@ -199,27 +261,80 @@ while 0 in recieved_data:
                     "left" : '0'
                 }
                 # t='http://t.nyaatracker.com/announce'
-                print(t+"?"+urlencode(params))
-                print(t)
+                # print(t+"?"+urlencode(params))
+                # print(t)
                 try:
-                    print("hi")
                     response = requests.get(
                         t+"?"+urlencode(params),
                         timeout=2
                     )
                 except requests.ConnectionError as e:
-                    print("failed")
+                    # print("failed")
                     continue
                 except:
                     continue
-                print("hi")
+                # print("hi")
                 if response.status_code < 200 or response.status_code >= 300:
-                    print("error",response.status_code)
+                    # print("error",response.status_code)
                     continue
                 if b'failure' in response.content or response.content==b'':
                     continue
                 print("resp\n",response.content)
-                input('wait')
+                try:
+                    _dict = decode(response.content)
+                    http_peer_dic = _dict[b'peers']
+                    peers = []
+                    for dictionary in http_peer_dic:
+                        peers.append(dictionary)
+                    for index in range(len(peers)):
+                        if 0 not in recieved_data:
+                            break
+                        ip=peers[index][b'ip']
+                        port=peers[index][b'port']
+                        # print(ip,port)
+                        if ip in connected_peers:
+                            continue
+                        clientsocket=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        clientsocket.settimeout(1)
+                        # print("trying")
+                        try:
+                            clientsocket.connect((ip,port))
+                        except:
+                            # print("nahi hua")
+                            continue
+                        # print('connected')
+                        clientsocket.send(handshake)
+                        # print("Okay....")
+                        messages=[]
+                        while True:
+                            clientsocket.settimeout(1)
+                            try:
+                                message = clientsocket.recv(4096)
+                            except:
+                                if messages!=[]:
+                                    break
+                            if not message:
+                                break
+                            else:
+                                messages.append(message)
+                        if messages==[]:
+                            continue
+                        if len(messages)>=1:
+                            try:
+                                flag,peer_bitfield = parse_bitfield(messages)
+                            except:
+                                continue
+                            # print(flag)
+                        if not flag or not peer_bitfield: #at this point, we have bitfield
+                            # print(flag,bitfield)
+                            continue
+                        t = Thread(target=active_peer,args=(clientsocket, peer_bitfield,ip,))
+                        threads.append(t)
+                        # active_peer(clientsocket,peer_bitfield)
+                        t.start()
+                        connected_peers.append(ip)
+                except:
+                    continue
         except socket.gaierror:
             # print('Connection to: {err} failed..'.format(err=tracker.hostname))
             pass
@@ -228,7 +343,9 @@ while 0 in recieved_data:
 
 if multi_torrent_flag:
     split_files()
-print("FILE IS DONE")
+
+k.join()
+print("File downloaded successfully.")
 
 
 sys.exit(0)

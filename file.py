@@ -21,7 +21,7 @@ def split_files():
         copypart(src,dest,offset,record[1])
         offset+=record[1]
     os.remove(src)
-    
+
     # temporary = open(output_path+temp_name+file_name,'rb')
     # offset=0
     # for record in files_details:

@@ -26,6 +26,24 @@ def handshake_parse(buf,conn):
 		print("failed",info_hash,hashes)
 		conn.close()
 
+def maintain_upload():
+	global current_download_speed,global_sleep_download
+	time_passed=0
+	while 0 in recieved_data:
+		sleep(1)
+		time_passed+=1
+		upoaded_pieces = sum(upload_rates.values())
+		current_upload_speed=(uploaded_pieces*piece_len)/time_passed
+		if allowed_upload>current_upload_speed:
+			if global_sleep_upload>0:
+				with lock:
+					global_sleep_upload-=1
+			continue
+		else:
+			with lock:
+				global_sleep_upload+=1
+	return
+
 def choke_unchoke_mechanism():
 	count = 0
 	while True:
@@ -59,11 +77,15 @@ def create_handshake_bitfield():
 	buffer = bytes.fromhex("13")
 	buffer += pack("!19s", str.encode("BitTorrent protocol"))
 	buffer += pack("!q", reserved)  # next 8 bytes is reserved
-	for hash in hashes:
-		hex_repr = binascii.a2b_hex(hash)
-		buffer += pack("!20s", hex_repr)
-	peer_id = '-MY0001-123450169321'.encode()
-	buffer += peer_id
+	hex_repr = binascii.a2b_hex(hashes[0])
+	buffer += pack("!20s", hex_repr)
+	peer_id = '-MY'
+	for _ in range(4):
+		peer_id+=str(random.randint(0,9))
+	peer_id+='-'
+	for _ in range(12):
+		peer_id+=str(random.randint(0,9))
+	buffer += peer_id.encode()
 	b=create_bitfield()
 	return buffer,b
 
@@ -245,6 +267,7 @@ def peer_thread(conn,addr):
 		print("here")
 		index=spec[0]#since it returns list
 		if check_if_piece(index)==True or True:
+			sleep(global_sleep_upload)
 			if spec[2]<=16384 and spec[2]<=piece_len:#spec[2] has the requested len
 				# print("entered with ",index,spec[1])
 				with lock:
@@ -254,6 +277,8 @@ def peer_thread(conn,addr):
 					file.close()
 				buffer = create_piece_request(data,index,spec[1])
 				conn.send(buffer)
+				with lock:
+					upload_rates[conn]+=1
 			else:
 				continue
 	with lock:
@@ -266,13 +291,14 @@ peers=[]
 choked=[]
 unchoked=[]
 seed_ip = ''
-seed_port = 6889
+seed_port = 6888
 
 def seeder_main():
 	server.bind((seed_ip, seed_port))
 	server.listen(100)
-	print("listening for connections")
+	# print("listening for connections")
 	start_new_thread(choke_unchoke_mechanism,())
+	start_new_thread(maintain_upload,())
 	while True:
 		conn, addr = server.accept()
 		print("accepted")

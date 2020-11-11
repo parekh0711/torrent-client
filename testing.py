@@ -1,3 +1,63 @@
+def initialise_variables(torrent_file_name):
+    modules.multi_torrent_flag = False
+    modules.temp_name=''
+    torr = open(torrent_file_name,'rb')
+    _dic = decode(torr.read())
+    modules.hash_string = _dic[b'info'][b'pieces']
+    modules.file_name = _dic[b'info'][b'name'].decode()
+    modules.total_size=0
+    if b'files' in _dic[b'info'].keys():
+        modules.multi_torrent_flag = True
+        modules.temp_name='TEMP'
+        ls=_dic[b'info'][b'files']
+        # input(ls)
+        files_details=[]
+        for e in ls:
+            modules.total_size+=e[b'length']
+            files_details.append((e[b'path'][0].decode(),e[b'length']))
+        modules.files_details=files_details
+        # input(modules.files_details)
+    else:
+        modules.total_size = _dic[b'info'][b'length']
+
+    modules.total_pieces = len(modules.hash_string)//20
+    modules.piece_len = _dic[b'info'][b'piece length']
+    tr = encode(_dic[b'info'])
+    modules.hashes=[hashlib.sha1(tr).hexdigest()]
+
+    ty=_dic[b'announce-list']
+    modules.trackers=[]
+    for i in range(len(ty)):
+    	a=[]
+    	url=ty[i][0].decode()
+    	a.append(url)
+    	modules.trackers.append(a)
+
+    modules.recieved_data = [0 for _ in range(modules.total_pieces)]
+    modules.bitfield = [0 for _ in range(modules.total_pieces)]
+    while len(modules.bitfield)%8!=0:
+        modules.bitfield.append(0)
+
+    modules.connected_peers=[]
+    modules.download_rates = defaultdict(lambda:0)
+    modules.end_all_threads = False
+    # print(round(modules.total_size%modules.piece_len/16384),modules.total_pieces)
+    # input()
+
+import modules
+import hashlib
+from bencodepy import decode,encode
+from collections import defaultdict
+import sys
+#
+# if len(sys.argv)<2:
+#     print("Error.")
+#     print("Run as python3 <path to torrent file>")
+#     sys.exit(0)
+
+initialise_variables("../trial.torrent")
+
+
 from udp import *
 from peer import *
 from _thread import start_new_thread
@@ -28,6 +88,7 @@ def active_peer(clientsocket,peer_bitfield,ip_address):
             return
     print("parsing peer")
     resp = parse_peer_response(message)
+    print(resp)
     if resp:
         print(ip,port)
         req = create_have_request(clientsocket,peer_bitfield,ip_address)
@@ -70,7 +131,7 @@ while 0 in recieved_data:
                 handshake,peer_id=create_handshake_message(hashes)
                 print(handshake)
                 print("Now trying")
-                peers = [{'IP':"127.0.0.1","port":9008}]
+                peers = [{'IP':"210.212.183.7","port":6885}]
                 for index in range(len(peers)):
                     ip=peers[index]['IP']
                     port=peers[index]['port']
