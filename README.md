@@ -1,5 +1,3 @@
-# torrent-client
-
 # Project Description
 
 A Bittorrent client for peer to peer sharing of files written in Python using multithreading. It works with any torrent file. It download as well as upload files.
