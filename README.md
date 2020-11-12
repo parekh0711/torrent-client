@@ -1,13 +1,13 @@
 # Project Description
 
-A Bittorrent client for peer to peer sharing of files written in Python using multithreading. It works with any torrent file. It download as well as upload files.
+A CLI Bittorrent client for peer to peer sharing of files written in Python using multithreading. It works with any torrent file. It can download as well as upload files.
 
 # Supported Platforms
 - Linux
 
 # Requirements
 - Python 3.5 or later
-- bencodepy
+- bencodepy ` pip3 install bencodepy `
 
 # Compilation Instructions
 - The most basic way to run the program is ` python3 main.py <path to torrent file> `
