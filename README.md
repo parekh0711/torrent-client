@@ -11,7 +11,7 @@ A CLI Bittorrent client for peer to peer sharing of files written in Python usin
 
 # Compilation Instructions
 - The most basic way to run the program is ` python3 main.py <path to torrent file> `
-- The optional paramters are:
+- The optional parameters are:
 
 | Parameter      	| Syntax                    	| Definition                                                                                         	|
 |----------------	|---------------------------	|----------------------------------------------------------------------------------------------------	|
