@@ -67,7 +67,6 @@ def modify(p):
     global bitfield
     p = list(map(int,list(p)))
     if len(p)!=len(bitfield):
-        # print("len mismatch",p,len(bitfield))
         return None
     with lock:
         for index in range(len(bitfield)):

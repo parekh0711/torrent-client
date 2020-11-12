@@ -60,7 +60,7 @@ def create_udp_announce_request(connection_id, hashes):
     key = udp_get_transaction_id()                                          #Unique key randomized by client
     buf += pack("!i", key)
     buf += pack("!i", -1)                                            #Number of peers required. Set to -1 for default
-    buf += pack("!i", 6889)
+    buf += pack("!i", 6882)
     return (buf, transaction_id)
 
 def udp_parse_announce_response(buf, sent_transaction_id):

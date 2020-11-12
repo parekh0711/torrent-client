@@ -7,6 +7,7 @@ import socket,sys
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+
 #parsing normal handshake to get infohash and peerid
 def handshake_parse(buf,conn):
 	if len(buf) < 68:
@@ -27,12 +28,12 @@ def handshake_parse(buf,conn):
 		conn.close()
 
 def maintain_upload():
-	global current_download_speed,global_sleep_download
+	global current_download_speed,global_sleep_upload
 	time_passed=0
 	while 0 in recieved_data:
 		sleep(1)
 		time_passed+=1
-		upoaded_pieces = sum(upload_rates.values())
+		uploaded_pieces = sum(upload_rates.values())
 		current_upload_speed=(uploaded_pieces*piece_len)/time_passed
 		if allowed_upload>current_upload_speed:
 			if global_sleep_upload>0:
@@ -291,7 +292,7 @@ peers=[]
 choked=[]
 unchoked=[]
 seed_ip = ''
-seed_port = 6888
+seed_port = 6882
 
 def seeder_main():
 	server.bind((seed_ip, seed_port))
