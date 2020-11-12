@@ -24,3 +24,6 @@ A CLI Bittorrent client for peer to peer sharing of files written in Python usin
 
 
 # Screenshots
+
+![CLI-Downloading](https://github.com/parekh0711/torrent-client/blob/main/Screenshots/screenshot1.png)
+![CLI-Completed](https://github.com/parekh0711/torrent-client/blob/main/Screenshots/screenshot2.png)
